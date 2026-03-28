@@ -4,8 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NEXCHAIN — Crypto Globe Intelligence</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <style>
+    <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --bg: #0b0f14;
@@ -21,8 +20,8 @@
       --purple: #a855f7;
       --text: #d6e8f5;
       --muted: #4a6480;
-      --font-ui: 'DM Mono', monospace;
-      --font-d: 'Syne', sans-serif;
+      --font-ui: Arial, Helvetica, sans-serif;
+      --font-d: 'Times New Roman', Times, serif;
       --nav-h: 58px;
       --bar-h: 38px;
       --sidebar-w: 310px;
@@ -68,7 +67,7 @@
       display: grid; place-items: center; box-shadow: 0 0 18px rgba(0,229,255,.24);
     }
     .logo-inner { width: 10px; height: 10px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
-    .logo-main { font-family: var(--font-d); font-size: 15px; font-weight: 800; letter-spacing: 1px; color: #fff; }
+    .logo-main { font-family: var(--font-ui); font-size: 15px; font-weight: 700; letter-spacing: 1px; color: #fff; }
     .logo-sub { font-size: 9px; color: var(--muted); letter-spacing: 2px; }
 
     .nav-gti {
@@ -77,7 +76,7 @@
       padding: 7px 14px; border-radius: 3px;
     }
     .gti-label { font-size: 9px; color: var(--muted); letter-spacing: 1.4px; }
-    .gti-val { font-family: var(--font-d); font-size: 22px; font-weight: 800; color: var(--gold); }
+    .gti-val { font-family: var(--font-ui); font-size: 22px; font-weight: 700; color: var(--gold); }
     .gti-delta { font-size: 11px; color: var(--green); }
     .gti-badge {
       font-size: 9px; letter-spacing: 1.4px; padding: 4px 8px; border-radius: 2px;
@@ -140,7 +139,7 @@
       min-height: 76px;
     }
     .metric-l { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-bottom: 8px; }
-    .metric-v { font-family: var(--font-d); font-size: 16px; font-weight: 700; color: #fff; }
+    .metric-v { font-family: var(--font-ui); font-size: 16px; font-weight: 700; color: #fff; }
     .metric-s { font-size: 10px; margin-top: 6px; }
 
     .region-list { display: flex; flex-direction: column; gap: 10px; }
@@ -179,7 +178,7 @@
       background: rgba(11,17,25,.92); border: 1px solid var(--border2); border-radius: 8px;
       padding: 22px 20px; box-shadow: 0 16px 60px rgba(0,0,0,.45);
     }
-    .loading-title { font-family: var(--font-d); font-size: 20px; color: var(--cyan); margin-bottom: 10px; }
+    .loading-title { font-family: var(--font-ui); font-size: 20px; color: var(--cyan); margin-bottom: 10px; }
     .loading-copy { color: var(--muted); font-size: 12px; line-height: 1.7; margin-bottom: 12px; }
     .loading-status { font-size: 11px; color: var(--gold); }
 
@@ -188,7 +187,7 @@
       background: rgba(13,18,26,.97); border: 1px solid var(--cyan2); border-radius: 4px;
       box-shadow: 0 0 26px rgba(0,229,255,.14); padding: 10px 12px; font-size: 10px;
     }
-    .tt-title { font-family: var(--font-d); font-size: 13px; font-weight: 700; letter-spacing: .8px; margin-bottom: 6px; }
+    .tt-title { font-family: var(--font-ui); font-size: 13px; font-weight: 700; letter-spacing: .8px; margin-bottom: 6px; }
     .tt-row { display: flex; justify-content: space-between; gap: 14px; padding: 3px 0; }
     .tt-k { color: var(--muted); }
 
@@ -198,8 +197,8 @@
     }
     .sig-card:hover { border-color: var(--cyan2); }
     .sc-top { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
-    .sc-coin { font-family: var(--font-d); font-size: 18px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
-    .sc-price { font-family: var(--font-d); font-size: 16px; font-weight: 700; color: #fff; }
+    .sc-coin { font-family: var(--font-ui); font-size: 18px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .sc-price { font-family: var(--font-ui); font-size: 16px; font-weight: 700; color: #fff; }
     .sc-sub { font-size: 10px; color: var(--muted); margin-top: 4px; }
     .sc-badge { font-size: 9px; font-weight: 700; letter-spacing: 1px; padding: 3px 8px; border-radius: 2px; }
     .b-buy { background: rgba(34,212,106,.15); color: var(--green); border: 1px solid var(--green); }
@@ -221,7 +220,7 @@
       padding: 22px 26px; overflow-y: auto; background: #0a1017;
     }
     .view-title {
-      font-family: var(--font-d); font-size: 18px; font-weight: 800; letter-spacing: 2px;
+      font-family: var(--font-ui); font-size: 18px; font-weight: 800; letter-spacing: 2px;
       color: var(--cyan); margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--border2);
     }
     .tbl-wrap { overflow-x: auto; }
@@ -232,7 +231,7 @@
     }
     .tbl td { font-size: 12px; padding: 12px; border-bottom: 1px solid var(--border); }
     .tbl tr:hover td { background: rgba(0,229,255,.03); }
-    .tsym { font-family: var(--font-d); font-size: 13px; font-weight: 700; color: var(--cyan); }
+    .tsym { font-family: var(--font-ui); font-size: 13px; font-weight: 700; color: var(--cyan); }
     .tfull { font-size: 10px; color: var(--muted); margin-top: 3px; }
 
     #bar {
@@ -419,6 +418,7 @@
     ];
 
     const CITY_POINTS = [
+      // These are illustrative market hubs, not direct news-event locations.
       { name: 'New York', region: 'North America', lat: 40.7128, lng: -74.0060, weight: 1.00 },
       { name: 'San Francisco', region: 'North America', lat: 37.7749, lng: -122.4194, weight: 0.88 },
       { name: 'London', region: 'Europe', lat: 51.5072, lng: -0.1276, weight: 0.84 },
@@ -432,6 +432,7 @@
     ];
 
     const SIGNAL_BADGES = {
+      // Placeholder signal labels. Replace these with outputs from your NLP/ML signal engine.
       bitcoin: 'BUY',
       ethereum: 'BUY',
       solana: 'BUY',
@@ -572,7 +573,7 @@
         ...point,
         value: point.weight,
         liveFlow: (btc + eth) * point.weight * 12000,
-        size: 0.20 + point.weight * 0.22,
+        size: 0.12 + point.weight * 0.06,
         color: point.weight >= .85 ? '#22d46a' : point.weight >= .7 ? '#00e5ff' : '#f7a830'
       }));
     }
@@ -616,6 +617,8 @@
     }
 
     function signalNarrative(asset) {
+      // This is still market-momentum text, not true event-driven reasoning.
+      // Replace this later with your internal news/NLP/ML explanation layer.
       const d24 = asset.price_change_percentage_24h ?? 0;
       const d7 = asset.price_change_percentage_7d_in_currency ?? 0;
       if (d24 > 4 && d7 > 8) return 'Momentum is real across both short and weekly windows. That does not mean it is safe. It means the trend is actually visible in the data.';
@@ -721,9 +724,10 @@
         .polygonAltitude(() => 0.006)
         .pointsData(app.cityPoints)
         .pointAltitude('size')
-        .pointRadius(point => point.size)
+        .pointRadius(() => 0.18)
+        .pointAltitude(() => 0.02)
         .pointColor('color')
-        .pointResolution(18)
+        .pointResolution(10)
         .onPointHover(point => {
           app.hoveredPoint = point || null;
           host.style.cursor = point ? 'pointer' : 'grab';
