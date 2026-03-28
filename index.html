@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GEOTRADE · Geopolitical Signal Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060810;
+  --bg2:#0a0d14;
+  --bg3:#0e1220;
+  --border:#1a2035;
+  --border2:#243050;
+  --text:#c4cedc;
+  --text2:#6a7d94;
+  --text3:#2e3d55;
+  --green:#00f5a0;
+  --red:#ff3d5a;
+  --amber:#f0a030;
+  --blue:#4a9eff;
+  --purple:#9b6dff;
+  --panel-w:340px;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Syne',sans-serif}
+canvas{display:block}
+
+/* TOPBAR */
+#topbar{
+  position:fixed;top:0;left:0;right:0;height:52px;
+  background:rgba(6,8,16,0.92);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;z-index:100;backdrop-filter:blur(12px);
+}
+.tb-left{display:flex;align-items:center;gap:16px}
+.logo-mark{
+  width:32px;height:32px;border:1.5px solid var(--green);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green);font-weight:500;
+  position:relative;
+}
+.logo-mark::after{
+  content:'';position:absolute;inset:-4px;border:1px solid rgba(0,245,160,0.15);border-radius:8px;
+}
+.logo-text{font-weight:800;font-size:16px;color:#e8edf5;letter-spacing:0.06em}
+.logo-ver{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:0.1em}
+
+.gti-block{display:flex;flex-direction:column;padding:0 16px;border-left:1px solid var(--border)}
+.gti-label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase}
+.gti-val{display:flex;align-items:baseline;gap:6px}
+.gti-num{font-family:'IBM Plex Mono',monospace;font-size:22px;color:var(--amber);font-weight:500}
+.gti-delta{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green)}
+.gti-badge{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;
+  padding:2px 8px;border-radius:3px;background:#2a1800;border:1px solid #5a3500;color:var(--amber);
+}
+
+.tb-nav{display:flex;gap:2px}
+.nav-btn{
+  padding:6px 14px;border-radius:5px;border:none;background:transparent;
+  font-family:'Syne',sans-serif;font-size:12px;color:var(--text2);cursor:pointer;
+  transition:all 0.15s;font-weight:600;letter-spacing:0.04em;
+}
+.nav-btn:hover{background:var(--bg3);color:var(--text)}
+.nav-btn.active{background:var(--bg3);color:var(--green);border:1px solid var(--border2)}
+
+.tb-right{display:flex;align-items:center;gap:14px}
+.live-pill{
+  display:flex;align-items:center;gap:6px;
+  background:#061a0d;border:1px solid #0f4020;border-radius:20px;
+  padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green);
+}
+.live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:blink 1.5s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+.utc-clock{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text3)}
+
+/* GLOBE CONTAINER */
+#globe-wrap{position:fixed;top:52px;left:0;right:0;bottom:48px;overflow:hidden}
+#globe-canvas{width:100%;height:100%}
+
+/* BOTTOM TICKER */
+#ticker-bar{
+  position:fixed;bottom:0;left:0;right:0;height:48px;
+  background:rgba(6,8,16,0.95);border-top:1px solid var(--border);
+  display:flex;align-items:center;overflow:hidden;z-index:100;
+}
+.ticker-label{
+  flex-shrink:0;padding:0 14px;border-right:1px solid var(--border);
+  font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text3);
+  letter-spacing:0.12em;text-transform:uppercase;white-space:nowrap;
+}
+.ticker-scroll{flex:1;overflow:hidden;position:relative}
+.ticker-inner{
+  display:inline-flex;gap:0;white-space:nowrap;
+  animation:ticker 40s linear infinite;
+}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.tick-item{
+  display:inline-flex;align-items:center;gap:10px;padding:0 28px;
+  border-right:1px solid var(--border);
+}
+.tick-sev-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.tick-sev-critical{background:var(--red)}
+.tick-sev-high{background:var(--amber)}
+.tick-sev-medium{background:var(--blue)}
+.tick-region{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase}
+.tick-headline{font-size:12px;color:var(--text);font-weight:600}
+.tick-time{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3)}
+
+/* SIGNAL PANEL */
+#signal-panel{
+  position:fixed;top:52px;right:0;bottom:48px;width:var(--panel-w);
+  background:rgba(8,10,18,0.96);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;z-index:90;
+  transform:translateX(0);transition:transform 0.3s ease;
+  backdrop-filter:blur(16px);
+}
+#signal-panel.hidden{transform:translateX(100%)}
+.panel-header{
+  padding:16px 18px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.panel-title{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  letter-spacing:0.12em;text-transform:uppercase;color:var(--text2);
+}
+.panel-close{
+  width:24px;height:24px;border-radius:4px;border:1px solid var(--border);
+  background:transparent;color:var(--text2);cursor:pointer;font-size:14px;
+  display:flex;align-items:center;justify-content:center;transition:all 0.15s;
+}
+.panel-close:hover{background:var(--bg3);color:var(--text)}
+.panel-body{flex:1;overflow-y:auto;padding:16px}
+.panel-body::-webkit-scrollbar{width:3px}
+.panel-body::-webkit-scrollbar-track{background:transparent}
+.panel-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* SIGNAL CARD */
+.sig-card{
+  background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+  padding:14px;margin-bottom:12px;position:relative;overflow:hidden;
+  transition:border-color 0.2s;
+}
+.sig-card:hover{border-color:var(--border2)}
+.sig-card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:2px 0 0 2px;
+}
+.sig-buy::before{background:var(--green)}
+.sig-sell::before{background:var(--red)}
+.sig-neutral::before{background:var(--amber)}
+
+.sig-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.sig-asset-name{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:500;color:#e8edf5}
+.sig-cat{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);margin-top:2px}
+.sig-badge-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.sig-badge{
+  padding:3px 10px;border-radius:3px;font-family:'IBM Plex Mono',monospace;
+  font-size:11px;font-weight:500;letter-spacing:0.06em;
+}
+.badge-buy{background:#061a0d;border:1px solid #0d4020;color:var(--green)}
+.badge-sell{background:#1a0610;border:1px solid #40100d;color:var(--red)}
+.badge-neutral{background:#1a1206;border:1px solid #40300d;color:var(--amber)}
+.sig-price{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#e8edf5}
+.sig-delta-pos{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green)}
+.sig-delta-neg{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--red)}
+
+.conf-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.conf-lbl{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);min-width:68px}
+.conf-track{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.conf-fill-buy{background:var(--green);height:100%;border-radius:2px}
+.conf-fill-sell{background:var(--red);height:100%;border-radius:2px}
+.conf-fill-neutral{background:var(--amber);height:100%;border-radius:2px}
+.conf-pct{font-family:'IBM Plex Mono',monospace;font-size:10px;min-width:30px;text-align:right}
+
+.ai-block{background:rgba(0,0,0,0.3);border-radius:6px;padding:10px;margin-bottom:10px}
+.ai-label{
+  display:flex;align-items:center;gap:6px;
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--text3);margin-bottom:6px;
+}
+.ai-label::before{content:'◈';color:var(--blue);font-size:11px}
+.ai-text{font-size:12px;color:var(--text2);line-height:1.6}
+
+.risk-block{margin-bottom:10px}
+.risk-label{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--text3);margin-bottom:6px;
+  display:flex;align-items:center;gap:6px;
+}
+.risk-label::before{content:'⚠';color:var(--amber);font-size:10px}
+.risk-item{
+  display:flex;align-items:center;gap:6px;
+  font-size:12px;color:var(--text2);padding:3px 0;
+}
+.risk-item::before{content:'›';color:var(--text3)}
+
+.sig-footer{
+  display:flex;justify-content:space-between;align-items:center;
+  border-top:1px solid var(--border);padding-top:8px;margin-top:4px;
+}
+.sig-tags{display:flex;gap:4px;flex-wrap:wrap}
+.sig-tag{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 7px;
+  border-radius:3px;background:#0a1225;border:1px solid #152040;color:#4a7dcc;
+}
+.sig-time{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3)}
+
+/* DIVIDER */
+.panel-divider{
+  margin:4px 0 14px;
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;
+  text-transform:uppercase;color:var(--text3);display:flex;align-items:center;gap:8px;
+}
+.panel-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* NEWS EVENT CARD */
+.ev-card{
+  display:flex;gap:10px;padding:10px 0;border-bottom:1px solid rgba(26,32,53,0.6);
+}
+.ev-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.ev-body{}
+.ev-headline{font-size:12px;color:var(--text);line-height:1.5;margin-bottom:3px;font-weight:600}
+.ev-meta{display:flex;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3)}
+
+/* GTI MINI PANEL */
+#gti-panel{
+  position:fixed;bottom:58px;left:20px;
+  background:rgba(8,10,18,0.92);border:1px solid var(--border);border-radius:8px;
+  padding:12px 14px;z-index:90;backdrop-filter:blur(12px);min-width:180px;
+}
+.gti-mini-title{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;
+  text-transform:uppercase;color:var(--text3);margin-bottom:8px;
+}
+.risk-legend{display:flex;flex-direction:column;gap:4px}
+.rl-item{display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text2)}
+.rl-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* PANEL TOGGLE */
+#panel-toggle{
+  position:fixed;top:52px;right:0;z-index:91;
+  background:rgba(8,10,18,0.9);border:1px solid var(--border);
+  border-right:none;border-top:none;border-radius:6px 0 0 6px;
+  padding:10px 8px;cursor:pointer;color:var(--text2);font-size:16px;
+  transition:all 0.15s;backdrop-filter:blur(8px);
+}
+#panel-toggle:hover{color:var(--green)}
+
+/* TOOLTIP */
+#tooltip{
+  position:fixed;background:rgba(8,10,18,0.95);border:1px solid var(--border2);
+  border-radius:8px;padding:10px 14px;pointer-events:none;z-index:200;
+  opacity:0;transition:opacity 0.15s;min-width:180px;
+  backdrop-filter:blur(12px);
+}
+.tt-country{font-size:13px;font-weight:700;color:#e8edf5;margin-bottom:4px}
+.tt-gti{font-family:'IBM Plex Mono',monospace;font-size:11px;margin-bottom:4px}
+.tt-hint{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:0.08em}
+
+/* STATS BAR */
+#stats-bar{
+  position:fixed;top:62px;left:20px;z-index:90;
+  display:flex;gap:10px;
+}
+.stat-pill{
+  background:rgba(8,10,18,0.88);border:1px solid var(--border);border-radius:6px;
+  padding:6px 12px;display:flex;gap:8px;align-items:center;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;backdrop-filter:blur(8px);
+}
+.stat-num-buy{color:var(--green);font-weight:500}
+.stat-num-sell{color:var(--red);font-weight:500}
+.stat-num-neutral{color:var(--amber);font-weight:500}
+.stat-lbl{color:var(--text3);font-size:10px}
+
+/* STAR BACKGROUND */
+#stars{position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;overflow:hidden}
+.star{position:absolute;background:#fff;border-radius:50%;animation:twinkle var(--dur,3s) ease-in-out infinite var(--delay,0s)}
+@keyframes twinkle{0%,100%{opacity:var(--op,0.4)}50%{opacity:0.05}}
+
+/* LOADING */
+#loading{
+  position:fixed;inset:0;background:var(--bg);z-index:999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+}
+.load-logo{font-weight:800;font-size:32px;color:#e8edf5;letter-spacing:0.1em}
+.load-sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text3);letter-spacing:0.15em}
+.load-bar-wrap{width:200px;height:2px;background:var(--border);border-radius:1px;overflow:hidden}
+.load-bar{height:100%;background:var(--green);border-radius:1px;animation:loadprog 1.8s ease forwards}
+@keyframes loadprog{0%{width:0}100%{width:100%}}
+
+/* COUNTRY CLICK PANEL */
+#country-panel{
+  position:fixed;top:52px;left:0;bottom:48px;width:320px;
+  background:rgba(8,10,18,0.96);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;z-index:90;
+  transform:translateX(-100%);transition:transform 0.3s ease;
+  backdrop-filter:blur(16px);
+}
+#country-panel.open{transform:translateX(0)}
+.cp-header{
+  padding:16px 18px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.cp-country-name{font-size:16px;font-weight:700;color:#e8edf5}
+.cp-region{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);margin-top:2px;letter-spacing:0.08em;text-transform:uppercase}
+.cp-risk-badge{
+  padding:4px 10px;border-radius:4px;font-family:'IBM Plex Mono',monospace;
+  font-size:10px;letter-spacing:0.06em;font-weight:500;
+}
+.cp-body{flex:1;overflow-y:auto;padding:16px}
+.cp-body::-webkit-scrollbar{width:3px}
+.cp-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.cp-section-title{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;
+  text-transform:uppercase;color:var(--text3);margin-bottom:10px;margin-top:16px;
+}
+.cp-section-title:first-child{margin-top:0}
+
+.cp-gti-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.cp-gti-score{
+  font-family:'IBM Plex Mono',monospace;font-size:32px;color:var(--amber);font-weight:500;
+  line-height:1;
+}
+.cp-gti-bar-wrap{flex:1}
+.cp-gti-bar-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:4px}
+.cp-gti-bar-fill{height:100%;border-radius:3px}
+
+.cp-mini-sig{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 10px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:6px;margin-bottom:8px;
+}
+.cp-sig-asset{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#e8edf5;font-weight:500}
+.cp-sig-right{display:flex;align-items:center;gap:8px}
+.cp-sig-price{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text2)}
+
+.cp-ev-item{
+  display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(26,32,53,0.5);
+}
+.cp-ev-content{}
+.cp-ev-headline{font-size:12px;color:var(--text);line-height:1.4;font-weight:600;margin-bottom:3px}
+.cp-ev-meta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3)}
+</style>
+</head>
+<body>
+
+<!-- Stars -->
+<div id="stars"></div>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="load-logo">GEOTRADE</div>
+  <div class="load-sub">Initializing signal engine · Mapping geopolitical data</div>
+  <div class="load-bar-wrap"><div class="load-bar"></div></div>
+</div>
+
+<!-- Topbar -->
+<div id="topbar">
+  <div class="tb-left">
+    <div class="logo-mark">GT</div>
+    <div>
+      <div class="logo-text">GEOTRADE</div>
+      <div class="logo-ver">TRADER v2.0</div>
+    </div>
+    <div class="gti-block">
+      <div class="gti-label">Global Tension Index (GTI)</div>
+      <div class="gti-val">
+        <div class="gti-num" id="gti-num">71.4</div>
+        <div class="gti-delta">▲+2.1</div>
+        <div class="gti-badge">ELEVATED</div>
+      </div>
+    </div>
+  </div>
+  <div class="tb-nav">
+    <button class="nav-btn active">🌐 Earth Pulse</button>
+    <button class="nav-btn">📡 AI Signals</button>
+    <button class="nav-btn">💼 Portfolio</button>
+  </div>
+  <div class="tb-right">
+    <div class="live-pill"><div class="live-dot"></div>LIVE · 8 feeds</div>
+    <div class="utc-clock" id="utc-clock">00:00:00 UTC</div>
+  </div>
+</div>
+
+<!-- Stats bar -->
+<div id="stats-bar">
+  <div class="stat-pill"><span class="stat-num-buy">14</span><span class="stat-lbl">BUY</span></div>
+  <div class="stat-pill"><span class="stat-num-sell">9</span><span class="stat-lbl">SELL</span></div>
+  <div class="stat-pill"><span class="stat-num-neutral">5</span><span class="stat-lbl">NEUTRAL</span></div>
+</div>
+
+<!-- Globe -->
+<div id="globe-wrap">
+  <canvas id="globe-canvas"></canvas>
+</div>
+
+<!-- Ticker -->
+<div id="ticker-bar">
+  <div class="ticker-label">GTI Events</div>
+  <div class="ticker-scroll">
+    <div class="ticker-inner" id="ticker-inner"></div>
+  </div>
+</div>
+
+<!-- GTI Legend -->
+<div id="gti-panel">
+  <div class="gti-mini-title">Risk Level</div>
+  <div class="risk-legend">
+    <div class="rl-item"><div class="rl-dot" style="background:#ff3d5a"></div>Critical ≥80</div>
+    <div class="rl-item"><div class="rl-dot" style="background:#f0a030"></div>High ≥60</div>
+    <div class="rl-item"><div class="rl-dot" style="background:#4a9eff"></div>Medium ≥35</div>
+    <div class="rl-item"><div class="rl-dot" style="background:#00f5a0"></div>Low &lt;35</div>
+  </div>
+</div>
+
+<!-- Panel toggle -->
+<button id="panel-toggle" onclick="togglePanel()" title="Toggle signals panel">›</button>
+
+<!-- Signal Panel -->
+<div id="signal-panel">
+  <div class="panel-header">
+    <div class="panel-title">AI Signal Intelligence</div>
+    <button class="panel-close" onclick="togglePanel()">✕</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</div>
+
+<!-- Country Panel -->
+<div id="country-panel">
+  <div class="cp-header">
+    <div>
+      <div class="cp-country-name" id="cp-name">—</div>
+      <div class="cp-region" id="cp-region">—</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="cp-risk-badge" id="cp-risk-badge">—</div>
+      <button class="panel-close" onclick="closeCountryPanel()">✕</button>
+    </div>
+  </div>
+  <div class="cp-body" id="cp-body"></div>
+</div>
+
+<!-- Tooltip -->
+<div id="tooltip">
+  <div class="tt-country" id="tt-country"></div>
+  <div class="tt-gti" id="tt-gti"></div>
+  <div class="tt-hint">Click to view signals</div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const SIGNALS = [
+  {asset:"BTC",category:"Crypto / Global",signal:"BUY",price:"$67,420",delta:"+2.4%",pos:true,confidence:88,uncertainty:8,
+   ai:"Safe haven demand surging. Geopolitical stress driving institutional rotation into Bitcoin as digital gold equivalent.",
+   risks:["Sudden de-escalation may reverse","Fed hawkish pivot risk"],tags:["macro","safe-haven","institutional"],time:"4m"},
+  {asset:"ETH",category:"Crypto / DeFi",signal:"BUY",price:"$3,512",delta:"+1.8%",pos:true,confidence:82,uncertainty:10,
+   ai:"EU MiCA approval unlocks institutional custody. DeFi protocol volumes rising on regulatory clarity.",
+   risks:["Smart contract exploit risk","Gas fee spike deterrent"],tags:["regulation","mica","defi"],time:"11m"},
+  {asset:"SOL",category:"Crypto / L1",signal:"NEUTRAL",price:"$178.40",delta:"-0.6%",pos:false,confidence:61,uncertainty:18,
+   ai:"Mixed signals. SEC pressure on Solana ETF offset by growing developer ecosystem momentum.",
+   risks:["SEC classification risk","Network outage history"],tags:["sec","etf","layer1"],time:"23m"},
+  {asset:"BNB",category:"Crypto / Exchange",signal:"SELL",price:"$588.10",delta:"-1.2%",pos:false,confidence:76,uncertainty:12,
+   ai:"China PBoC cross-border settlement restrictions directly impacting Binance volume. Regulatory headwind severe.",
+   risks:["Further PBoC restrictions","DOJ investigation ongoing"],tags:["china","regulation","exchange"],time:"38m"},
+  {asset:"XRP",category:"Crypto / Payments",signal:"BUY",price:"$0.6201",delta:"+3.1%",pos:true,confidence:79,uncertainty:11,
+   ai:"Nigeria CBN softening stance creates new CBDC corridor opportunity. Ripple partnership pipeline strong.",
+   risks:["SEC case appeal risk","SWIFT competition"],tags:["cbdc","nigeria","payments"],time:"52m"},
+];
+
+const COUNTRIES = {
+  "United States":{region:"Americas",gti:45,risk:"MEDIUM",signals:[
+    {asset:"BTC",signal:"BUY",price:"$67,420",delta:"+2.4%",pos:true},
+    {asset:"ETH",signal:"BUY",price:"$3,512",delta:"+1.8%",pos:true},
+  ],events:[
+    {headline:"SEC files emergency motion against major DeFi protocol",sev:"HIGH",time:"38m"},
+    {headline:"US Fed signals rate pause — dollar weakens against risk assets",sev:"MEDIUM",time:"1h"},
+  ]},
+  "China":{region:"Asia Pacific",gti:78,risk:"HIGH",signals:[
+    {asset:"BNB",signal:"SELL",price:"$588",delta:"-1.2%",pos:false},
+    {asset:"BTC",signal:"SELL",price:"$67,420",delta:"-0.8%",pos:false},
+  ],events:[
+    {headline:"PBoC restricts cross-border crypto settlements in Q2 directive",sev:"CRITICAL",time:"11m"},
+    {headline:"Digital yuan pilots expanded to 15 new provinces",sev:"HIGH",time:"2h"},
+  ]},
+  "Russia":{region:"Europe",gti:88,risk:"CRITICAL",signals:[
+    {asset:"BTC",signal:"BUY",price:"$67,420",delta:"+3.1%",pos:true},
+    {asset:"XRP",signal:"SELL",price:"$0.62",delta:"-2.0%",pos:false},
+  ],events:[
+    {headline:"Sanctions enforcement tightened on Russian crypto exchanges",sev:"CRITICAL",time:"2h"},
+    {headline:"Ruble-backed stablecoin pilot announced by central bank",sev:"HIGH",time:"3h"},
+  ]},
+  "Iran":{region:"Middle East",gti:85,risk:"CRITICAL",signals:[
+    {asset:"BTC",signal:"BUY",price:"$67,420",delta:"+4.2%",pos:true},
+  ],events:[
+    {headline:"Nuclear talks resume in Geneva amid US sanctions relief signals",sev:"CRITICAL",time:"4m"},
+    {headline:"Iran mining firms account for 5% of global BTC hashrate",sev:"HIGH",time:"6h"},
+  ]},
+  "Germany":{region:"Europe",gti:28,risk:"LOW",signals:[
+    {asset:"ETH",signal:"BUY",price:"$3,512",delta:"+1.8%",pos:true},
+    {asset:"BTC",signal:"BUY",price:"$67,420",delta:"+2.4%",pos:true},
+  ],events:[
+    {headline:"Bundesbank approves crypto custody for institutional funds",sev:"MEDIUM",time:"5h"},
+    {headline:"EU MiCA framework greenlit — institutional crypto custody legal",sev:"HIGH",time:"23m"},
+  ]},
+  "Nigeria":{region:"Africa",gti:52,risk:"MEDIUM",signals:[
+    {asset:"XRP",signal:"BUY",price:"$0.6201",delta:"+3.1%",pos:true},
+    {asset:"BTC",signal:"NEUTRAL",price:"$67,420",delta:"+0.5%",pos:true},
+  ],events:[
+    {headline:"CBN softens stance on crypto — review committee formed",sev:"MEDIUM",time:"52m"},
+    {headline:"P2P crypto volumes hit record $2.3B in Q1",sev:"MEDIUM",time:"4h"},
+  ]},
+  "South Korea":{region:"Asia Pacific",gti:62,risk:"HIGH",signals:[
+    {asset:"BTC",signal:"SELL",price:"$67,420",delta:"-1.5%",pos:false},
+    {asset:"XRP",signal:"SELL",price:"$0.62",delta:"-0.9%",pos:false},
+  ],events:[
+    {headline:"Parliament passes emergency crypto trading restrictions",sev:"HIGH",time:"1h 14m"},
+    {headline:"Upbit reports 30% volume drop following regulation announcement",sev:"HIGH",time:"2h"},
+  ]},
+  "Brazil":{region:"Americas",gti:41,risk:"MEDIUM",signals:[
+    {asset:"BTC",signal:"NEUTRAL",price:"$67,420",delta:"+0.3%",pos:true},
+  ],events:[
+    {headline:"Receita Federal launches crypto tax compliance sweep",sev:"MEDIUM",time:"29m"},
+    {headline:"Brazil's crypto adoption reaches 15% of adult population",sev:"LOW",time:"8h"},
+  ]},
+};
+
+const EVENTS = [
+  {region:"Middle East",headline:"Strait of Hormuz Naval Deployment — Iran tensions escalate",sev:"critical",time:"4m"},
+  {region:"Europe",headline:"ECB Emergency Statement on digital euro timeline acceleration",sev:"high",time:"18m"},
+  {region:"Asia Pacific",headline:"China PBoC Q2 crypto settlement directive issued",sev:"critical",time:"32m"},
+  {region:"Americas",headline:"SEC emergency injunction against unnamed DeFi protocol",sev:"high",time:"45m"},
+  {region:"Europe",headline:"EU MiCA framework officially greenlit by European Parliament",sev:"high",time:"1h 2m"},
+  {region:"Africa",headline:"Nigeria CBN committee to review crypto ban reversal",sev:"medium",time:"1h 15m"},
+  {region:"Asia Pacific",headline:"South Korea parliament passes emergency crypto trading bill",sev:"high",time:"1h 28m"},
+  {region:"Americas",headline:"US Federal Reserve signals rate pause for Q2 2025",sev:"medium",time:"2h"},
+  {region:"Middle East",headline:"Iran nuclear talks resume in Geneva — sanctions relief possible",sev:"critical",time:"4m"},
+  {region:"Europe",headline:"UK FCA grants 3 new crypto exchange operating licenses",sev:"medium",time:"3h"},
+];
+
+// GTI colors per risk
+function gtiColor(score){
+  if(score>=80) return '#ff3d5a';
+  if(score>=60) return '#f0a030';
+  if(score>=35) return '#4a9eff';
+  return '#00f5a0';
+}
+
+function riskLabel(score){
+  if(score>=80) return 'CRITICAL';
+  if(score>=60) return 'HIGH';
+  if(score>=35) return 'MEDIUM';
+  return 'LOW';
+}
+
+function riskBadgeStyle(risk){
+  const styles={
+    CRITICAL:'background:#1a0610;border:1px solid #5c1020;color:#ff3d5a',
+    HIGH:'background:#1a1006;border:1px solid #5c3a10;color:#f0a030',
+    MEDIUM:'background:#060e1a;border:1px solid #102040;color:#4a9eff',
+    LOW:'background:#061a10;border:1px solid #104030;color:#00f5a0',
+  };
+  return styles[risk]||styles.MEDIUM;
+}
+
+// ── STARS ──────────────────────────────────────────────────────────────────────
+(function(){
+  const c=document.getElementById('stars');
+  for(let i=0;i<120;i++){
+    const s=document.createElement('div');
+    s.className='star';
+    const sz=Math.random()*2+0.5;
+    s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--op:${Math.random()*0.5+0.1};--dur:${(Math.random()*3+2).toFixed(1)}s;--delay:-${(Math.random()*5).toFixed(1)}s`;
+    c.appendChild(s);
+  }
+})();
+
+// ── CLOCK ──────────────────────────────────────────────────────────────────────
+function updateClock(){
+  const n=new Date();
+  document.getElementById('utc-clock').textContent=
+    String(n.getUTCHours()).padStart(2,'0')+':'+
+    String(n.getUTCMinutes()).padStart(2,'0')+':'+
+    String(n.getUTCSeconds()).padStart(2,'0')+' UTC';
+}
+setInterval(updateClock,1000);updateClock();
+
+// ── TICKER ──────────────────────────────────────────────────────────────────────
+(function(){
+  const inner=document.getElementById('ticker-inner');
+  const sevCol={critical:'tick-sev-critical',high:'tick-sev-high',medium:'tick-sev-medium'};
+  let html='';
+  for(let pass=0;pass<2;pass++){
+    EVENTS.forEach(e=>{
+      html+=`<div class="tick-item">
+        <div class="tick-sev-dot ${sevCol[e.sev]||'tick-sev-medium'}"></div>
+        <div class="tick-region">${e.region}</div>
+        <div class="tick-headline">${e.headline}</div>
+        <div class="tick-time">${e.time} ago</div>
+      </div>`;
+    });
+  }
+  inner.innerHTML=html;
+})();
+
+// ── SIGNAL PANEL ──────────────────────────────────────────────────────────────
+let panelOpen=true;
+function togglePanel(){
+  panelOpen=!panelOpen;
+  document.getElementById('signal-panel').classList.toggle('hidden',!panelOpen);
+  document.getElementById('panel-toggle').textContent=panelOpen?'›':'‹';
+}
+
+(function renderPanel(){
+  const body=document.getElementById('panel-body');
+  let html='';
+  SIGNALS.forEach(s=>{
+    const sc=s.signal==='BUY'?'buy':s.signal==='SELL'?'sell':'neutral';
+    const fillClass=`conf-fill-${sc}`;
+    const badgeClass=`badge-${sc}`;
+    const deltaClass=s.pos?'sig-delta-pos':'sig-delta-neg';
+    const arrow=s.pos?'↑':'↓';
+    html+=`<div class="sig-card sig-${sc}">
+      <div class="sig-top">
+        <div>
+          <div class="sig-asset-name">${s.asset}</div>
+          <div class="sig-cat">${s.category}</div>
+        </div>
+        <div class="sig-badge-wrap">
+          <div class="sig-badge ${badgeClass}">${s.signal}</div>
+          <div class="sig-price">${s.price}</div>
+          <div class="${deltaClass}">${arrow}${s.delta}</div>
+        </div>
+      </div>
+      <div class="conf-row">
+        <div class="conf-lbl">Confidence</div>
+        <div class="conf-track"><div class="${fillClass}" style="width:${s.confidence}%"></div></div>
+        <div class="conf-pct" style="color:${sc==='buy'?'#00f5a0':sc==='sell'?'#ff3d5a':'#f0a030'}">${s.confidence}%</div>
+      </div>
+      <div class="conf-row">
+        <div class="conf-lbl">Uncertainty</div>
+        <div class="conf-track"><div style="background:#2a3550;height:100%;width:${s.uncertainty*4}%;border-radius:2px"></div></div>
+        <div class="conf-pct" style="color:#4a5d80">${s.uncertainty}%</div>
+      </div>
+      <div class="ai-block">
+        <div class="ai-label">AI Analysis</div>
+        <div class="ai-text">${s.ai}</div>
+      </div>
+      <div class="risk-block">
+        <div class="risk-label">Risk Factors</div>
+        ${s.risks.map(r=>`<div class="risk-item">${r}</div>`).join('')}
+      </div>
+      <div class="sig-footer">
+        <div class="sig-tags">${s.tags.map(t=>`<div class="sig-tag">${t}</div>`).join('')}</div>
+        <div class="sig-time">${s.time} ago</div>
+      </div>
+    </div>`;
+  });
+  body.innerHTML=html;
+})();
+
+// ── COUNTRY PANEL ──────────────────────────────────────────────────────────────
+function openCountryPanel(name){
+  const data=COUNTRIES[name];
+  if(!data) return;
+  document.getElementById('cp-name').textContent=name;
+  document.getElementById('cp-region').textContent=data.region;
+  const badge=document.getElementById('cp-risk-badge');
+  badge.textContent=data.risk;
+  badge.style.cssText=riskBadgeStyle(data.risk);
+  const col=gtiColor(data.gti);
+  const body=document.getElementById('cp-body');
+  let html=`
+    <div class="cp-gti-row">
+      <div class="cp-gti-score" style="color:${col}">${data.gti}</div>
+      <div class="cp-gti-bar-wrap">
+        <div class="conf-lbl" style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#2e3d55;letter-spacing:0.1em;text-transform:uppercase">Geopolitical Tension Index</div>
+        <div class="cp-gti-bar-track"><div class="cp-gti-bar-fill" style="width:${data.gti}%;background:${col}"></div></div>
+      </div>
+    </div>
+    <div class="cp-section-title">Crypto Signals</div>`;
+  data.signals.forEach(s=>{
+    const sc=s.signal==='BUY'?'buy':s.signal==='SELL'?'sell':'neutral';
+    const col2=sc==='buy'?'#00f5a0':sc==='sell'?'#ff3d5a':'#f0a030';
+    const arrow=s.pos?'↑':'↓';
+    html+=`<div class="cp-mini-sig">
+      <div class="cp-sig-asset">${s.asset}</div>
+      <div class="cp-sig-right">
+        <div class="cp-sig-price">${s.price}</div>
+        <div class="sig-badge badge-${sc}" style="font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 8px;border-radius:3px">${s.signal}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:${col2}">${arrow}${s.delta}</div>
+      </div>
+    </div>`;
+  });
+  html+=`<div class="cp-section-title">Geopolitical Events</div>`;
+  data.events.forEach(e=>{
+    const dc={CRITICAL:'#ff3d5a',HIGH:'#f0a030',MEDIUM:'#4a9eff',LOW:'#00f5a0'}[e.sev]||'#4a9eff';
+    html+=`<div class="cp-ev-item">
+      <div class="ev-dot" style="background:${dc};margin-top:4px"></div>
+      <div class="cp-ev-content">
+        <div class="cp-ev-headline">${e.headline}</div>
+        <div class="cp-ev-meta">${e.sev} · ${e.time} ago</div>
+      </div>
+    </div>`;
+  });
+  body.innerHTML=html;
+  document.getElementById('country-panel').classList.add('open');
+}
+function closeCountryPanel(){
+  document.getElementById('country-panel').classList.remove('open');
+}
+
+// ── THREE.JS GLOBE ──────────────────────────────────────────────────────────────
+let scene,camera,renderer,globeMesh,atmoMesh,raycaster,mouse,isHovering=false;
+let isDragging=false,prevMouse={x:0,y:0},rotVel={x:0,y:0};
+
+function initGlobe(){
+  const wrap=document.getElementById('globe-wrap');
+  const W=wrap.clientWidth,H=wrap.clientHeight;
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(45,W/H,0.1,1000);
+  camera.position.z=2.8;
+  renderer=new THREE.WebGLRenderer({canvas:document.getElementById('globe-canvas'),antialias:true,alpha:true});
+  renderer.setSize(W,H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setClearColor(0x000000,0);
+
+  // Lights
+  const ambient=new THREE.AmbientLight(0x334466,1.2);
+  scene.add(ambient);
+  const dirLight=new THREE.DirectionalLight(0x88aaff,2.0);
+  dirLight.position.set(5,3,5);
+  scene.add(dirLight);
+  const rimLight=new THREE.DirectionalLight(0x00f5a0,0.4);
+  rimLight.position.set(-5,-2,-3);
+  scene.add(rimLight);
+
+  // Globe
+  const geo=new THREE.SphereGeometry(1,64,64);
+  const canvas2d=document.createElement('canvas');
+  canvas2d.width=2048;canvas2d.height=1024;
+  const ctx=canvas2d.getContext('2d');
+  drawGlobeTexture(ctx,canvas2d.width,canvas2d.height);
+  const tex=new THREE.CanvasTexture(canvas2d);
+  const mat=new THREE.MeshPhongMaterial({map:tex,specular:new THREE.Color(0x223355),shininess:40});
+  globeMesh=new THREE.Mesh(geo,mat);
+  scene.add(globeMesh);
+
+  // Atmosphere glow
+  const atmoGeo=new THREE.SphereGeometry(1.04,64,64);
+  const atmoMat=new THREE.MeshPhongMaterial({
+    color:0x1a4080,transparent:true,opacity:0.15,side:THREE.FrontSide,
+    blending:THREE.AdditiveBlending,depthWrite:false
+  });
+  atmoMesh=new THREE.Mesh(atmoGeo,atmoMat);
+  scene.add(atmoMesh);
+
+  // Outer glow ring
+  const outerGeo=new THREE.SphereGeometry(1.08,64,64);
+  const outerMat=new THREE.MeshPhongMaterial({
+    color:0x0a2040,transparent:true,opacity:0.06,side:THREE.FrontSide,
+    blending:THREE.AdditiveBlending,depthWrite:false
+  });
+  scene.add(new THREE.Mesh(outerGeo,outerMat));
+
+  raycaster=new THREE.Raycaster();
+  mouse=new THREE.Vector2();
+
+  // Events
+  const canvas=renderer.domElement;
+  canvas.addEventListener('mousemove',onMouseMove);
+  canvas.addEventListener('mousedown',onMouseDown);
+  canvas.addEventListener('mouseup',onMouseUp);
+  canvas.addEventListener('click',onGlobeClick);
+  canvas.addEventListener('mouseleave',()=>{
+    document.getElementById('tooltip').style.opacity='0';
+    isHovering=false;
+  });
+  window.addEventListener('resize',()=>{
+    const W=wrap.clientWidth,H=wrap.clientHeight;
+    camera.aspect=W/H;camera.updateProjectionMatrix();
+    renderer.setSize(W,H);
+  });
+
+  animate();
+}
+
+// Country geo-regions approximation on the sphere
+const COUNTRY_REGIONS = [
+  {name:"United States",lat:38,lon:-97,color:'#1d9e75'},
+  {name:"China",lat:35,lon:104,color:'#ff3d5a'},
+  {name:"Russia",lat:60,lon:90,color:'#ff3d5a'},
+  {name:"Iran",lat:32,lon:53,color:'#ff3d5a'},
+  {name:"Germany",lat:51,lon:10,color:'#00f5a0'},
+  {name:"Nigeria",lat:9,lon:8,color:'#4a9eff'},
+  {name:"South Korea",lat:36,lon:128,color:'#f0a030'},
+  {name:"Brazil",lat:-14,lon:-51,color:'#4a9eff'},
+];
+
+function latLonToXY(lat,lon,W,H){
+  const x=(lon+180)/360*W;
+  const y=(90-lat)/180*H;
+  return {x,y};
+}
+
+function drawGlobeTexture(ctx,W,H){
+  // Ocean
+  const grad=ctx.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0,'#071828');
+  grad.addColorStop(0.5,'#0a1f35');
+  grad.addColorStop(1,'#060f20');
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,W,H);
+
+  // Grid lines
+  ctx.strokeStyle='rgba(30,50,90,0.5)';
+  ctx.lineWidth=1;
+  for(let lat=-90;lat<=90;lat+=30){
+    const y=(90-lat)/180*H;
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+  }
+  for(let lon=-180;lon<=180;lon+=30){
+    const x=(lon+180)/360*W;
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();
+  }
+
+  // Simplified continent shapes
+  const continents=[
+    // North America
+    {pts:[[600,180],[780,180],[820,240],[840,340],[800,420],[740,480],[680,500],[620,460],[580,400],[560,320],[580,240]],col:'#0e3a28'},
+    // South America
+    {pts:[[660,500],[740,500],[780,560],[800,640],[770,750],[720,820],[660,820],[620,760],[620,680],[640,600]],col:'#0e3a28'},
+    // Europe
+    {pts:[[920,160],[1020,160],[1060,200],[1040,260],[1000,280],[960,270],[920,240]],col:'#0d3525'},
+    // Africa
+    {pts:[[960,300],[1060,300],[1100,360],[1100,500],[1060,620],[1000,680],[940,660],[900,580],[880,460],[900,360]],col:'#0d3525'},
+    // Asia
+    {pts:[[1060,140],[1300,120],[1480,160],[1600,200],[1620,300],[1560,380],[1480,400],[1380,360],[1300,340],[1200,300],[1120,280],[1060,240]],col:'#0d3525'},
+    // Oceania
+    {pts:[[1420,560],[1520,540],[1580,580],[1600,640],[1560,680],[1480,680],[1420,640]],col:'#0d3525'},
+    // Japan
+    {pts:[[1540,220],[1560,210],[1580,230],[1570,260],[1550,260],[1535,240]],col:'#0d3525'},
+  ];
+
+  continents.forEach(c=>{
+    ctx.beginPath();
+    ctx.moveTo(c.pts[0][0],c.pts[0][1]);
+    c.pts.slice(1).forEach(p=>ctx.lineTo(p[0],p[1]));
+    ctx.closePath();
+    ctx.fillStyle=c.col;ctx.fill();
+    ctx.strokeStyle='rgba(0,245,160,0.08)';ctx.lineWidth=1.5;ctx.stroke();
+  });
+
+  // Country heat highlights
+  const countryData=[
+    {name:"Russia",pts:[[1060,140],[1300,120],[1400,130],[1400,200],[1260,230],[1140,230],[1060,200]],gti:88},
+    {name:"China",pts:[[1200,220],[1380,200],[1420,260],[1380,320],[1280,340],[1200,320],[1180,280]],gti:78},
+    {name:"Iran",pts:[[1040,260],[1120,240],[1160,280],[1140,320],[1080,330],[1040,300]],gti:85},
+    {name:"South Korea",pts:[[1460,240],[1500,235],[1515,260],[1500,280],[1460,275]],gti:62},
+    {name:"United States",pts:[[600,180],[780,180],[810,220],[800,360],[740,420],[660,440],[600,380],[570,280]],gti:45},
+    {name:"Nigeria",pts:[[960,400],[1010,390],[1030,430],[1010,470],[960,470],[940,430]],gti:52},
+    {name:"Brazil",pts:[[660,500],[760,495],[790,570],[780,670],[720,710],[660,700],[630,620],[640,550]],gti:41},
+    {name:"Germany",pts:[[960,195],[1000,190],[1015,215],[1000,240],[960,240],[945,215]],gti:28},
+  ];
+
+  countryData.forEach(c=>{
+    const col=gtiColor(c.gti);
+    const rgb=hexToRgb(col);
+    ctx.beginPath();
+    ctx.moveTo(c.pts[0][0],c.pts[0][1]);
+    c.pts.slice(1).forEach(p=>ctx.lineTo(p[0],p[1]));
+    ctx.closePath();
+    ctx.fillStyle=`rgba(${rgb.r},${rgb.g},${rgb.b},0.45)`;
+    ctx.fill();
+    ctx.strokeStyle=`rgba(${rgb.r},${rgb.g},${rgb.b},0.7)`;
+    ctx.lineWidth=1.5;ctx.stroke();
+  });
+
+  // Hotspot dots for known countries
+  COUNTRY_REGIONS.forEach(cr=>{
+    const pos=latLonToXY(cr.lat,cr.lon,W,H);
+    const rgb=hexToRgb(cr.color);
+    const pulse=ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,12);
+    pulse.addColorStop(0,`rgba(${rgb.r},${rgb.g},${rgb.b},0.8)`);
+    pulse.addColorStop(1,`rgba(${rgb.r},${rgb.g},${rgb.b},0)`);
+    ctx.beginPath();ctx.arc(pos.x,pos.y,12,0,Math.PI*2);
+    ctx.fillStyle=pulse;ctx.fill();
+    ctx.beginPath();ctx.arc(pos.x,pos.y,3,0,Math.PI*2);
+    ctx.fillStyle=cr.color;ctx.fill();
+  });
+}
+
+function hexToRgb(hex){
+  const r=parseInt(hex.slice(1,3),16);
+  const g=parseInt(hex.slice(3,5),16);
+  const b=parseInt(hex.slice(5,7),16);
+  return{r,g,b};
+}
+
+function onMouseMove(e){
+  const rect=renderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+
+  if(isDragging){
+    const dx=e.clientX-prevMouse.x;
+    const dy=e.clientY-prevMouse.y;
+    rotVel.y=dx*0.004;
+    rotVel.x=dy*0.004;
+    globeMesh.rotation.y+=rotVel.y;
+    globeMesh.rotation.x+=rotVel.x;
+    atmoMesh.rotation.y=globeMesh.rotation.y;
+    atmoMesh.rotation.x=globeMesh.rotation.x;
+    prevMouse={x:e.clientX,y:e.clientY};
+  }
+
+  // Tooltip
+  raycaster.setFromCamera(mouse,camera);
+  const hits=raycaster.intersectObject(globeMesh);
+  if(hits.length>0){
+    const uv=hits[0].uv;
+    const lon=(uv.x*360)-180;
+    const lat=90-(uv.y*180);
+    const country=findCountryAt(lat,lon);
+    const tt=document.getElementById('tooltip');
+    if(country){
+      const data=COUNTRIES[country];
+      const col=gtiColor(data?data.gti:50);
+      document.getElementById('tt-country').textContent=country;
+      document.getElementById('tt-gti').innerHTML=`<span style="color:${col}">GTI ${data?data.gti:'–'}</span> <span style="color:#2e3d55;font-size:10px;font-family:'IBM Plex Mono',monospace">· ${data?data.risk:'–'}</span>`;
+      tt.style.left=(e.clientX+14)+'px';
+      tt.style.top=(e.clientY-10)+'px';
+      tt.style.opacity='1';
+      renderer.domElement.style.cursor='pointer';
+    } else {
+      tt.style.opacity='0';
+      renderer.domElement.style.cursor='grab';
+    }
+  } else {
+    document.getElementById('tooltip').style.opacity='0';
+    renderer.domElement.style.cursor='default';
+  }
+}
+
+function findCountryAt(lat,lon){
+  // Approximate bounding boxes for known countries
+  const boxes=[
+    {name:"United States",latMin:25,latMax:50,lonMin:-130,lonMax:-65},
+    {name:"China",latMin:18,latMax:53,lonMin:73,lonMax:135},
+    {name:"Russia",latMin:50,latMax:78,lonMin:28,lonMax:170},
+    {name:"Iran",latMin:25,latMax:40,lonMin:44,lonMax:64},
+    {name:"Germany",latMin:47,latMax:55,lonMin:6,lonMax:15},
+    {name:"Nigeria",latMin:4,latMax:14,lonMin:3,lonMax:15},
+    {name:"South Korea",latMin:33,latMax:38,lonMin:125,lonMax:130},
+    {name:"Brazil",latMin:-33,latMax:5,lonMin:-74,lonMax:-34},
+  ];
+  for(const b of boxes){
+    if(lat>=b.latMin&&lat<=b.latMax&&lon>=b.lonMin&&lon<=b.lonMax) return b.name;
+  }
+  return null;
+}
+
+function onMouseDown(e){
+  isDragging=true;
+  prevMouse={x:e.clientX,y:e.clientY};
+  renderer.domElement.style.cursor='grabbing';
+}
+
+function onMouseUp(){
+  isDragging=false;
+  renderer.domElement.style.cursor='grab';
+}
+
+function onGlobeClick(e){
+  if(Math.abs(rotVel.x)>0.01||Math.abs(rotVel.y)>0.01) return;
+  raycaster.setFromCamera(mouse,camera);
+  const hits=raycaster.intersectObject(globeMesh);
+  if(hits.length>0){
+    const uv=hits[0].uv;
+    const lon=(uv.x*360)-180;
+    const lat=90-(uv.y*180);
+    const country=findCountryAt(lat,lon);
+    if(country) openCountryPanel(country);
+  }
+}
+
+function animate(){
+  requestAnimationFrame(animate);
+  if(!isDragging){
+    globeMesh.rotation.y+=0.0008;
+    atmoMesh.rotation.y=globeMesh.rotation.y;
+    rotVel.x*=0.92;rotVel.y*=0.92;
+  }
+  renderer.render(scene,camera);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    initGlobe();
+    document.getElementById('loading').style.transition='opacity 0.6s';
+    document.getElementById('loading').style.opacity='0';
+    setTimeout(()=>document.getElementById('loading').style.display='none',600);
+  },1800);
+});
+</script>
+</body>
+</html>
