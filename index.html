@@ -449,7 +449,9 @@
       assets: [],
       cityPoints: [],
       hoveredPoint: null,
-      resizeTimer: null
+      resizeTimer: null,
+      lastUpdatedAt: null,
+      refreshTimer: null
     };
 
     const el = {
@@ -534,10 +536,27 @@
       window.addEventListener('resize', draw);
     }
 
-    async function fetchJson(url, label) {
-      const res = await fetch(url, { headers: { 'accept': 'application/json' } });
-      if (!res.ok) throw new Error(`${label} failed: ${res.status}`);
-      return res.json();
+    async function fetchJson(url, label, retries = 2) {
+      let lastError = null;
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 12000);
+          const res = await fetch(url, {
+            headers: { 'accept': 'application/json' },
+            signal: controller.signal
+          });
+          clearTimeout(timeout);
+          if (!res.ok) throw new Error(`${label} failed: ${res.status}`);
+          return res.json();
+        } catch (err) {
+          lastError = err;
+          if (attempt < retries) {
+            await new Promise(r => setTimeout(r, 600 * (attempt + 1)));
+          }
+        }
+      }
+      throw lastError;
     }
 
     async function fetchMarketData() {
@@ -552,10 +571,11 @@
 
       app.market = globalJson.data;
       app.assets = marketsJson;
+      app.lastUpdatedAt = Date.now();
       document.getElementById('feedCnt').textContent = '1';
       el.marketStatus.textContent = 'live';
       el.marketStatus.className = 'pos';
-      el.lastSync.textContent = new Date().toLocaleTimeString();
+      el.lastSync.textContent = new Date(app.lastUpdatedAt).toLocaleTimeString();
     }
 
     async function fetchCountries() {
@@ -613,7 +633,25 @@
       document.getElementById('cfiBadge').textContent = cfi.label;
       document.getElementById('cfiDelta').textContent = 'LIVE';
 
-      el.centerSummary.textContent = `${formatUsd(app.market?.total_market_cap?.usd, true)} market cap • ${formatUsd(app.market?.total_volume?.usd, true)} 24H volume`;
+      el.centerSummary.textContent = createPulseLine();
+    }
+
+    function createPulseLine() {
+      const sorted = [...app.assets].sort((a, b) => (b.price_change_percentage_24h ?? 0) - (a.price_change_percentage_24h ?? 0));
+      const leader = sorted[0];
+      const lagger = sorted[sorted.length - 1];
+      const riseCount = app.assets.filter(a => (a.price_change_percentage_24h ?? 0) >= 0).length;
+      const breadth = `${riseCount}/${app.assets.length} green`;
+      return `Pulse: ${leader?.symbol?.toUpperCase() ?? '--'} leads ${formatPct(leader?.price_change_percentage_24h ?? 0).replace(/<[^>]*>/g, '')} • ${lagger?.symbol?.toUpperCase() ?? '--'} trails ${formatPct(lagger?.price_change_percentage_24h ?? 0).replace(/<[^>]*>/g, '')} • Breadth ${breadth}`;
+    }
+
+    function updateFreshnessStatus() {
+      if (!app.lastUpdatedAt) return;
+      const ageSec = Math.max(0, Math.floor((Date.now() - app.lastUpdatedAt) / 1000));
+      const freshness = ageSec < 75 ? 'live' : ageSec < 180 ? 'delayed' : 'stale';
+      el.marketStatus.textContent = freshness;
+      el.marketStatus.className = freshness === 'live' ? 'pos' : freshness === 'delayed' ? 'amber' : 'neg';
+      el.lastSync.textContent = `${new Date(app.lastUpdatedAt).toLocaleTimeString()} (${ageSec}s ago)`;
     }
 
     function signalNarrative(asset) {
@@ -853,15 +891,15 @@
         setLoading('Prototype loaded.');
         setTimeout(() => el.loadingMask.classList.add('hidden'), 500);
 
-        setInterval(async () => {
+        app.refreshTimer = setInterval(async () => {
           try {
             await refreshDataCycle();
           } catch (err) {
             console.error(err);
-            el.marketStatus.textContent = 'retry failed';
-            el.marketStatus.className = 'neg';
+            updateFreshnessStatus();
           }
         }, REFRESH_MS);
+        setInterval(updateFreshnessStatus, 1000);
 
         window.addEventListener('resize', () => {
           clearTimeout(app.resizeTimer);
